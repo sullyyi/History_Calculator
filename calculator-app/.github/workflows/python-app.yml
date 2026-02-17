@@ -5,16 +5,17 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repo
+        uses: actions/checkout@v4
 
       - name: Set up Python
-      - uses: actions/setup-python@v5
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -25,4 +26,4 @@ jobs:
 
       - name: Run tests with coverage (100% required)
         run: |
-          pytest --cov=app --cov-report=term-missing --cov-fail-under=100
+          pytest --cov=app tests/ --cov-report=term-missing --cov-fail-under=100
