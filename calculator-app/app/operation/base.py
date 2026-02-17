@@ -11,4 +11,4 @@ class Operation(ABC):
     @abstractmethod
     def compute(self, a: float, b: float) -> float:
         """Compute the result of applying the operation to a and b."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
