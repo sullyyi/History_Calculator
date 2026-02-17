@@ -1,7 +1,10 @@
 History Calculator
 A modular, professional-grade command-line calculator application built in Python with full unit testing, 100% test coverage, and continuous integration using GitHub Actions.
+
 Overview:
-This project implements a modular command-line calculator using clean architecture principles. It supports:
+This project implements a modular command-line calculator using clean architecture principles. 
+
+It supports:
 A fully interactive REPL (Read–Eval–Print Loop)
 Arithmetic operations (add, subtract, multiply, divide)
 Input validation and robust error handling
