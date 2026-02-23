@@ -35,12 +35,54 @@ def test_history_add_all_clear_and_format_empty():
     history.add(factory.create("add", 2, 3))
     history.add(factory.create("mul", 3, 4))
 
-    items = history.all()
-    assert len(items) == 2
+    df = history.all()
+    assert len(df) == 2
+    assert set(["operation", "a", "b", "result"]).issubset(df.columns)
 
     lines = history.format_lines()
     assert len(lines) == 2
     assert any("add" in line for line in lines)
 
     history.clear()
-    assert history.all() == []
+    df2 = history.all()
+    assert len(df2) == 0
+    assert history.format_lines() == ["(no history)"]
+
+
+def test_history_snapshot_and_restore():
+    factory = CalculationFactory()
+    history = CalculationHistory()
+
+    history.add(factory.create("add", 2, 3))
+    history.add(factory.create("mul", 3, 4))
+
+    snap = history.snapshot()
+
+    history.add(factory.create("sub", 10, 1))
+    assert len(history.all()) == 3
+
+    history.restore(snap)
+    assert len(history.all()) == 2
+    lines = history.format_lines()
+    assert any("add" in line for line in lines)
+    assert any("mul" in line for line in lines)
+
+
+def test_history_save_and_load_round_trip(tmp_path):
+    factory = CalculationFactory()
+    history = CalculationHistory()
+
+    history.add(factory.create("add", 2, 3))
+    history.add(factory.create("pow", 2, 3))
+
+    path = tmp_path / "history.csv"
+    history.save(path)
+
+    new_history = CalculationHistory()
+    new_history.load(path)
+
+    df = new_history.all()
+    assert len(df) == 2
+    lines = new_history.format_lines()
+    assert any("add" in line for line in lines)
+    assert any("pow" in line for line in lines)

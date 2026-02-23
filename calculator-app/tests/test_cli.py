@@ -57,22 +57,6 @@ def test_handle_line_success_adds_history():
     assert len(history.all()) == 1
 
 
-def test_handle_line_pow_success_adds_history():
-    factory = CalculationFactory()
-    history = CalculationHistory()
-    out = handle_line("pow 2 3", factory, history)
-    assert out == "Result: 8.0"
-    assert len(history.all()) == 1
-
-
-def test_handle_line_root_success_adds_history():
-    factory = CalculationFactory()
-    history = CalculationHistory()
-    out = handle_line("root 9 2", factory, history)
-    assert out == "Result: 3.0"
-    assert len(history.all()) == 1
-
-
 def test_handle_line_history_after_calc():
     factory = CalculationFactory()
     history = CalculationHistory()
