@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Dict
 
-from app.operation.arithmetic import Add, Divide, Multiply, Subtract
+from app.operation.arithmetic import Add, Divide, Multiply, Subtract, Power, Root
 from app.operation.base import Operation
 
 from .models import Calculation
@@ -17,6 +17,8 @@ class CalculationFactory:
             "sub": Subtract(),
             "mul": Multiply(),
             "div": Divide(),
+            "pow": Power(),
+            "root": Root(),
         }
 
     @property
