@@ -16,6 +16,8 @@ def test_handle_line_help_contains_supported_ops():
     out = handle_line("help", factory, history)
     assert "Supported ops" in out
     assert "add" in out
+    assert "pow" in out
+    assert "root" in out
 
 
 def test_handle_line_bad_format():
@@ -36,7 +38,7 @@ def test_handle_line_non_numeric():
 def test_handle_line_unknown_operation():
     factory = CalculationFactory()
     history = CalculationHistory()
-    out = handle_line("pow 2 3", factory, history)
+    out = handle_line("nope 2 3", factory, history)
     assert "Unsupported operation" in out
 
 
@@ -52,6 +54,22 @@ def test_handle_line_success_adds_history():
     history = CalculationHistory()
     out = handle_line("add 2 3", factory, history)
     assert out == "Result: 5.0"
+    assert len(history.all()) == 1
+
+
+def test_handle_line_pow_success_adds_history():
+    factory = CalculationFactory()
+    history = CalculationHistory()
+    out = handle_line("pow 2 3", factory, history)
+    assert out == "Result: 8.0"
+    assert len(history.all()) == 1
+
+
+def test_handle_line_root_success_adds_history():
+    factory = CalculationFactory()
+    history = CalculationHistory()
+    out = handle_line("root 9 2", factory, history)
+    assert out == "Result: 3.0"
     assert len(history.all()) == 1
 
 
