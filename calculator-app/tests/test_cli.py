@@ -124,7 +124,11 @@ def test_handle_line_load_missing_file(tmp_path: Path):
     assert "Error: History file not found" in out
 
 
-def test_run_repl_end_to_end(tmp_path: Path):
+def test_run_repl_end_to_end(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("CALC_HISTORY_PATH", str(tmp_path / "history.csv"))
+    monkeypatch.setenv("CALC_AUTO_LOAD", "false")
+    monkeypatch.setenv("CALC_AUTO_SAVE", "false")
+
     inputs = iter(["help", "add 1 2", "history", "exit"])
     outputs: list[str] = []
 
@@ -137,7 +141,6 @@ def test_run_repl_end_to_end(tmp_path: Path):
     run_repl(
         input_func=fake_input,
         output_func=fake_output,
-        history_path=tmp_path / "history.csv",
     )
 
     assert any("Calculator REPL" in s for s in outputs)

@@ -4,16 +4,9 @@ from collections.abc import Callable
 from pathlib import Path
 
 from app.calculator.facade import Calculator
-
-
-def parse_numbers(a_str: str, b_str: str) -> tuple[float, float]:
-    # EAFP: attempt conversion, catch failure
-    try:
-        a = float(a_str)
-        b = float(b_str)
-    except ValueError as exc:
-        raise ValueError("Inputs must be numbers.") from exc
-    return a, b
+from app.calculator_config import load_config
+from app.exceptions import ConfigurationError
+from app.input_validators import parse_two_numbers
 
 
 def handle_line(line: str, calc: Calculator) -> str | None:
@@ -63,7 +56,7 @@ def handle_line(line: str, calc: Calculator) -> str | None:
 
     op_name, a_str, b_str = parts
     try:
-        a, b = parse_numbers(a_str, b_str)
+        a, b = parse_two_numbers(a_str, b_str)
         result = calc.execute(op_name, a, b)
         return f"Result: {result}"
     except ZeroDivisionError as exc:
@@ -75,18 +68,33 @@ def handle_line(line: str, calc: Calculator) -> str | None:
 def run_repl(
     input_func: Callable[[str], str] = input,
     output_func: Callable[[str], None] = print,
-    history_path: str | Path = "history.csv",
+    history_path: str | Path | None = None,
 ) -> None:
-    calc = Calculator.create_default(history_path=history_path)
+    # Load dotenv/env configuration (graceful failure)
+    try:
+        cfg = load_config()
+    except ConfigurationError as exc:
+        output_func(f"Configuration error: {exc}")
+        return
+
+    # CLI arg overrides env config if provided
+    path = Path(history_path) if history_path is not None else cfg.history_path
+
+    calc = Calculator.create_default(
+        history_path=path,
+        auto_save=cfg.auto_save,
+        auto_load=False,  # we'll do controlled auto-load below
+    )
 
     output_func("Calculator REPL. Type 'help' for commands.")
 
-    # Optional auto-load; keep it small and predictable
-    try:
-        if calc.auto_load_if_exists():
-            output_func(f"Loaded history from: {calc.history_path}")
-    except Exception as exc:
-        output_func(f"Warning: Failed to load history: {exc}")
+    # Auto-load if enabled (Approach A keeps autosave optional)
+    if cfg.auto_load:
+        try:
+            if calc.auto_load_if_exists():
+                output_func(f"Loaded history from: {calc.history_path}")
+        except Exception as exc:
+            output_func(f"Warning: Failed to load history: {exc}")
 
     while True:
         line = input_func("> ")
