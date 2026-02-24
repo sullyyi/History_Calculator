@@ -5,7 +5,7 @@ from app.calculator.cli import run_repl
 from app.calculation.factory import CalculationFactory
 from app.calculation.history import CalculationHistory
 from app.operation.arithmetic import Power, Root
-
+from app.calculator.facade import Calculator
 
 
 @pytest.mark.parametrize(
@@ -147,3 +147,44 @@ def test_run_repl_auto_load_warning(monkeypatch, tmp_path: Path):
 
     run_repl(input_func=fake_input, output_func=fake_output)
     assert any("Warning: Failed to load history:" in s for s in outputs)
+
+def test_facade_auto_save_writes_file(tmp_path: Path):
+    path = tmp_path / "history.csv"
+    calc = Calculator.create_default(history_path=path, auto_save=True, auto_load=False)
+    calc.execute("add", 1, 2)
+    assert path.exists()
+
+def test_facade_auto_load_true_loads_existing(tmp_path: Path):
+    path = tmp_path / "history.csv"
+    pd.DataFrame([{"operation": "add", "a": 1, "b": 2, "result": 3}]).to_csv(path, index=False)
+
+    calc = Calculator.create_default(history_path=path, auto_save=False, auto_load=True)
+    assert len(calc.history.all()) == 1
+
+
+def test_history_load_missing_required_columns_raises(tmp_path):
+    path = tmp_path / "bad.csv"
+    # Missing "result"
+    pd.DataFrame([{"operation": "add", "a": 1, "b": 2}]).to_csv(path, index=False)
+
+    history = CalculationHistory()
+    with pytest.raises(ValueError):
+        history.load(path)
+
+
+def test_history_load_missing_required_columns_hits_branch(tmp_path):
+    path = tmp_path / "missing_cols.csv"
+
+    # Only include a totally unrelated column so read_csv succeeds but required columns are missing
+    pd.DataFrame([{"x": 1}]).to_csv(path, index=False)
+
+    history = CalculationHistory()
+    with pytest.raises(ValueError):
+        history.load(path)
+
+def test_history_load_missing_file_raises(tmp_path):
+    history = CalculationHistory()
+    missing = tmp_path / "nope.csv"
+
+    with pytest.raises(FileNotFoundError):
+        history.load(missing)
