@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from app.exceptions import ValidationError
 from collections.abc import Callable
 from pathlib import Path
 
@@ -60,6 +60,8 @@ def handle_line(line: str, calc: Calculator) -> str | None:
         result = calc.execute(op_name, a, b)
         return f"Result: {result}"
     except ZeroDivisionError as exc:
+        return f"Error: {exc}"
+    except ValidationError as exc:
         return f"Error: {exc}"
     except ValueError as exc:
         return f"Error: {exc}"

@@ -1,7 +1,11 @@
 import pytest
-
+import pandas as pd
+from pathlib import Path
+from app.calculator.cli import run_repl
 from app.calculation.factory import CalculationFactory
 from app.calculation.history import CalculationHistory
+from app.operation.arithmetic import Power, Root
+
 
 
 @pytest.mark.parametrize(
@@ -86,3 +90,60 @@ def test_history_save_and_load_round_trip(tmp_path):
     lines = new_history.format_lines()
     assert any("add" in line for line in lines)
     assert any("pow" in line for line in lines)
+
+def test_history_load_missing_required_columns_raises(tmp_path):
+    path = tmp_path / "bad.csv"
+    pd.DataFrame([{"operation": "add", "a": 1, "b": 2}]).to_csv(path, index=False)  # missing "result"
+
+    history = CalculationHistory()
+    with pytest.raises(ValueError):
+        history.load(path)
+
+
+def test_calculation_format_includes_operation_and_equals():
+    factory = CalculationFactory()
+    calc = factory.create("add", 2, 3)
+    s = calc.format()
+    assert "add" in s
+    assert "=" in s
+
+
+def test_power_complex_result_raises():
+    with pytest.raises(ValueError):
+        Power().compute(-1, 0.5)
+
+def test_root_negative_non_integer_exponent_raises():
+    with pytest.raises(ValueError):
+        Root().compute(-8, 2.5)
+
+
+
+def test_run_repl_configuration_error(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("CALC_HISTORY_PATH", "")
+    outputs = []
+
+    def fake_input(prompt: str) -> str:
+        return "exit"
+
+    def fake_output(msg: str) -> None:
+        outputs.append(msg)
+
+    run_repl(input_func=fake_input, output_func=fake_output, history_path=tmp_path/"x.csv")
+    assert any("Configuration error:" in s for s in outputs)
+
+def test_run_repl_auto_load_warning(monkeypatch, tmp_path: Path):
+    monkeypatch.setenv("CALC_HISTORY_PATH", str(tmp_path))  # directory, not file
+    monkeypatch.setenv("CALC_AUTO_LOAD", "true")
+    monkeypatch.setenv("CALC_AUTO_SAVE", "false")
+
+    inputs = iter(["exit"])
+    outputs = []
+
+    def fake_input(prompt: str) -> str:
+        return next(inputs)
+
+    def fake_output(msg: str) -> None:
+        outputs.append(msg)
+
+    run_repl(input_func=fake_input, output_func=fake_output)
+    assert any("Warning: Failed to load history:" in s for s in outputs)
