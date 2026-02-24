@@ -1,0 +1,21 @@
+# Virtual environments
+calculator-app/.venv/
+calculator-app/venv/
+
+# Python cache
+**/__pycache__/
+*.pyc
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# Pytest cache
+.pytest_cache/
+
+# Environment files
+calculator-app/.env
+
+# macOS
+.DS_Store
