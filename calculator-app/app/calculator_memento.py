@@ -16,3 +16,9 @@ class MementoCaretaker:
 
     def clear_redo(self) -> None:
         self.redo_stack.clear()
+
+    def can_undo(self) -> bool:
+        return bool(self.undo_stack)
+
+    def can_redo(self) -> bool:
+        return bool(self.redo_stack)
