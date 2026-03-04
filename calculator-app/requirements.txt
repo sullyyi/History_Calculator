@@ -3,3 +3,4 @@ pytest-cov
 coverage
 pandas
 python-dotenv
+colorama

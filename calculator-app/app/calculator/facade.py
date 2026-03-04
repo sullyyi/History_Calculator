@@ -70,7 +70,7 @@ class Calculator:
         ops = self.supported_ops_text()
         return (
             "Commands:\n"
-            "  add | sub | mul | div | pow | root  -> perform arithmetic\n"
+            "  add | sub | mul | div | pow | root | mod | int_div | percent | abs_diff  -> perform arithmetic\n"
             "  history                            -> show history\n"
             "  clear                              -> clear history\n"
             "  undo                               -> undo last change\n"

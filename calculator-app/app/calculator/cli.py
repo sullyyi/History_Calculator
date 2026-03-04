@@ -7,6 +7,9 @@ from app.calculator.facade import Calculator
 from app.calculator_config import load_config
 from app.exceptions import ConfigurationError
 from app.input_validators import parse_two_numbers
+from colorama import Fore, Style, init
+
+init(autoreset=True)
 
 ALIASES: dict[str, str] = {
     # Required command names ->  internal operation names
@@ -29,7 +32,8 @@ def handle_line(line: str, calc: Calculator) -> str | None:
     cmd = line.lower()
 
     if cmd == "help":
-        return calc.help_text()
+        lines = calc.history_lines()
+        return "\n".join(Fore.CYAN + line + Style.RESET_ALL for line in lines)
 
     if cmd == "history":
         return "\n".join(calc.history_lines())
@@ -71,13 +75,15 @@ def handle_line(line: str, calc: Calculator) -> str | None:
         op_name = ALIASES.get(op_name.lower(), op_name.lower())
         a, b = parse_two_numbers(a_str, b_str)
         result = calc.execute(op_name, a, b)
-        return f"Result: {result}"
+        return Fore.GREEN + f"Result: {result}" + Style.RESET_ALL
     except ZeroDivisionError as exc:
-        return f"Error: {exc}"
+        return Fore.RED + f"Error: {exc}" + Style.RESET_ALL
+
     except ValidationError as exc:
-        return f"Error: {exc}"
+        return Fore.RED + f"Error: {exc}" + Style.RESET_ALL
+
     except ValueError as exc:
-        return f"Error: {exc}"
+        return Fore.RED + f"Error: {exc}" + Style.RESET_ALL
 
 
 def run_repl(
