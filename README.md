@@ -1,8 +1,13 @@
 # History Calculator
 
-A modular, production-style command-line calculator application built in Python using advanced object-oriented design patterns, persistent history storage with pandas, environment-based configuration, and 100% unit test coverage enforced through continuous integration.
+A modular, production-style command-line calculator application built in Python using advanced object-oriented design patterns, persistent history storage with pandas, environment-based configuration, and automated testing with continuous integration.
 
 ---
+
+## Badges
+![Python](https://img.shields.io/badge/python-3.12-blue)
+![Tests](https://img.shields.io/badge/tests-85%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)
 
 ## Overview
 
@@ -10,15 +15,18 @@ This project implements a modular command-line calculator using clean architectu
 
 It supports:
 
-- A fully interactive REPL (Read–Eval–Print Loop)  
-- Arithmetic operations (add, subtract, multiply, divide, power, root)  
-- Persistent calculation history stored as CSV using pandas  
-- Undo and redo functionality via state snapshots  
-- Environment-based configuration using dotenv  
-- Observer-driven optional auto-save behavior  
-- Strategy-based execution abstraction  
-- Factory pattern for calculation creation  
-- 100% unit test coverage enforced in continuous integration  
+- A fully interactive REPL (Read–Eval–Print Loop)
+- Arithmetic operations including power, root, modulus, integer division, percentage, and absolute difference
+- Persistent calculation history stored as CSV using pandas
+- Timestamped history entries (stored in CSV but hidden from CLI history view)
+- Undo and redo functionality via state snapshots
+- Environment-based configuration using dotenv
+- Observer-driven logging and optional auto-save behavior
+- Strategy-based execution abstraction
+- Factory pattern for operation creation
+- Colorized CLI output for improved readability
+- ≥90% unit test coverage with pytest
+- Automated testing using GitHub Actions
 
 The project emphasizes separation of concerns, maintainability, extensibility, and professional development practices.
 
@@ -28,37 +36,50 @@ The project emphasizes separation of concerns, maintainability, extensibility, a
 
 The application runs as a continuous command-line session allowing users to:
 
-- Perform calculations  
-- View calculation history  
-- Clear history  
-- Undo and redo actions  
-- Save and load history from CSV  
-- Request help  
-- Exit cleanly  
+- Perform calculations
+- View calculation history
+- Clear history
+- Undo and redo actions
+- Save and load history from CSV
+- Request help
+- Exit cleanly
+
+Colorized output improves readability:
+
+- **Green** → calculation results  
+- **Red** → errors  
+- **Yellow** → help output  
+- **Cyan** → history output  
 
 ---
 
 ## Supported Commands
 
-### Arithmetic
+### Arithmetic Operations
 
-- `add a b` — Adds two numbers  
-- `sub a b` — Subtracts two numbers  
-- `mul a b` — Multiplies two numbers  
-- `div a b` — Divides two numbers  
-- `pow a b` — Raises a to the power of b  
-- `root a b` — Computes the b-th root of a  
+Each operation accepts **two numeric arguments**.
+
+- `add a b` — Adds two numbers
+- `sub a b` — Subtracts two numbers
+- `mul a b` — Multiplies two numbers
+- `div a b` — Divides two numbers
+- `pow a b` — Raises `a` to the power of `b`
+- `root a b` — Computes the `b`-th root of `a`
+- `mod a b` — Computes the modulus (remainder) of `a` divided by `b`
+- `int_div a b` — Performs integer division of `a` by `b`
+- `percent a b` — Computes `(a / 100) * b`
+- `abs_diff a b` — Computes the absolute difference between `a` and `b`
 
 ### History and State Management
 
-- `history` — Displays calculation history  
-- `clear` — Clears history  
-- `undo` — Reverts the last change  
-- `redo` — Reapplies the last undone change  
-- `save` — Saves history to CSV  
-- `load` — Loads history from CSV  
-- `help` — Displays instructions  
-- `exit` — Exits the program  
+- `history` — Displays calculation history
+- `clear` — Clears history
+- `undo` — Reverts the last change
+- `redo` — Reapplies the last undone change
+- `save` — Saves history to CSV
+- `load` — Loads history from CSV
+- `help` — Displays instructions
+- `exit` — Exits the program
 
 ---
 
@@ -66,25 +87,69 @@ The application runs as a continuous command-line session allowing users to:
 
 This project implements several advanced object-oriented design patterns.
 
+## System Architecture
+
+The calculator is organized around a central `Calculator` facade that coordinates operations, history management, observers, and execution strategies.
+
+```mermaid
+flowchart TD
+
+User --> CLI
+CLI --> Calculator
+
+Calculator --> Factory
+Factory --> Operations
+
+Calculator --> Strategy
+Strategy --> Execution
+
+Calculator --> History
+History --> CSV
+
+Calculator --> Observer
+Observer --> Logging
+Observer --> AutoSave
+```
+
 ### Facade Pattern
 
-The `Calculator` class acts as the central interface for executing operations, managing history, and coordinating internal components.
+The `Calculator` class acts as the central interface for executing operations, managing history, observers, and persistence.
+
+---
 
 ### Factory Pattern
 
 `CalculationFactory` dynamically instantiates operation objects based on user input, eliminating conditional logic inside the REPL.
 
+---
+
 ### Strategy Pattern
 
-Execution behavior is abstracted through interchangeable strategies. The default strategy executes calculations directly, but custom strategies can alter execution behavior without modifying the core system.
+Execution behavior is abstracted through interchangeable strategies.
+
+The default strategy performs direct calculation execution, but additional strategies could alter execution logic without modifying the core system.
+
+---
 
 ### Observer Pattern
 
-Observers subscribe to calculator state changes. An `AutoSaveObserver` can automatically persist history when calculations are added, undone, redone, cleared, or loaded.
+Observers respond to calculator state changes.
+
+Two observers are implemented:
+
+- **LoggingObserver**  
+  Logs each calculation to a log file with operation details.
+
+- **AutoSaveObserver**  
+  Automatically saves history to CSV when calculations occur or history changes.
+
+---
 
 ### Memento Pattern
 
 Undo and redo functionality is implemented using history snapshots stored in caretaker stacks.
+
+This allows the application to safely restore previous states without mutating the existing history structure.
 
 ---
 
@@ -92,20 +157,39 @@ Undo and redo functionality is implemented using history snapshots stored in car
 
 The application uses environment variables via `python-dotenv`.
 
-Create a `.env` file using the provided `.env.example` template.
+Create a `.env` file in the project root.
 
 ### Environment Variables
 
-- `CALC_HISTORY_PATH` — Path to CSV file for history persistence  
-- `CALC_AUTO_LOAD` — Automatically load history on startup  
-- `CALC_AUTO_SAVE` — Automatically save history after state changes  
+Base directories:
 
-Example:
-CALC_HISTORY_PATH = history.csv
-CALC_AUTO_LOAD = true
-CALC_AUTO_SAVE = false
+- `CALCULATOR_LOG_DIR` — Directory where log files are stored
+- `CALCULATOR_HISTORY_DIR` — Directory where history CSV files are stored
 
-Configuration errors are handled gracefully at application startup.
+History settings:
+
+- `CALCULATOR_MAX_HISTORY_SIZE` — Maximum number of stored history entries
+- `CALCULATOR_AUTO_SAVE` — Automatically save history after state changes
+
+Calculation settings:
+
+- `CALCULATOR_PRECISION` — Decimal precision for results
+- `CALCULATOR_MAX_INPUT_VALUE` — Maximum allowed numeric input
+- `CALCULATOR_DEFAULT_ENCODING` — Default encoding for file operations
+
+Example `.env` file:
+
+```
+CALCULATOR_HISTORY_DIR=.
+CALCULATOR_LOG_DIR=.
+
+CALCULATOR_AUTO_SAVE=false
+CALCULATOR_PRECISION=6
+CALCULATOR_MAX_HISTORY_SIZE=1000
+CALCULATOR_DEFAULT_ENCODING=utf-8
+```
+
+Configuration errors are handled gracefully during application startup.
 
 ---
 
@@ -113,13 +197,34 @@ Configuration errors are handled gracefully at application startup.
 
 The `CalculationHistory` class:
 
-- Stores history using a pandas DataFrame  
-- Supports CSV save and load operations  
-- Validates required columns  
-- Enforces numeric type conversion  
-- Supports snapshot and restore operations  
+- Stores history using a pandas DataFrame
+- Serializes history to CSV files
+- Loads history from CSV
+- Automatically adds a **timestamp column** in UTC ISO format
+- Validates CSV structure
+- Supports snapshot and restore operations for undo/redo
 
-History persistence is file-based and configurable via environment variables.
+The timestamp column is stored in the CSV but **not displayed in CLI history output**.
+
+---
+
+## Logging
+
+Logging is implemented using Python’s built-in `logging` module.
+
+The system logs:
+
+- Calculations performed
+- Operation details (operation, operands, result)
+- Important events such as loading history or failures
+
+Example log entry:
+
+```
+2026-03-03 18:45:02 INFO calc op=add a=2.0 b=3.0 result=5.0
+```
+
+Logs are written to the file defined by the configuration.
 
 ---
 
@@ -129,86 +234,183 @@ This application demonstrates multiple error handling paradigms.
 
 ### LBYL (Look Before You Leap)
 
-Used for checking file existence before loading history.
+Used for validating input ranges and ensuring required files exist before loading.
 
 ### EAFP (Easier to Ask Forgiveness than Permission)
 
-Used for user input parsing and numeric conversion.
+Used when parsing user input and converting types.
 
-Custom exception classes ensure consistent validation and configuration error reporting.
+Custom exceptions include:
 
-All invalid input cases are handled gracefully with clear, user-friendly error messages.
+- `ValidationError`
+- `ConfigurationError`
+- operation-level exceptions
+
+All invalid inputs are handled gracefully with clear user feedback.
 
 ---
 
 ## Testing
 
-This project uses pytest with:
+This project uses **pytest** with:
 
-- Unit tests for all modules  
-- Parameterized tests  
-- Positive and negative case testing  
-- Strategy and observer behavior verification  
-- Persistence and file-handling tests  
-- REPL logic testing via dependency injection  
-- 100% test coverage enforcement  
+- Unit tests for all modules
+- Parameterized tests
+- Positive and negative case testing
+- Observer behavior validation
+- Strategy behavior validation
+- Persistence and CSV serialization tests
+- REPL logic testing via dependency injection
+
+### Test Coverage
+
+Test coverage is measured using **pytest-cov**.
+
+Coverage requirement:
+
+```
+≥ 90%
+```
+
+---
 
 ### Run Tests Locally
 
 From the `calculator-app` directory:
-pytest --cov=app tests/ --cov-report=term-missing --cov-fail-under=100
 
-
-If coverage falls below 100%, the test run will fail.
+```
+pytest --cov=app --cov-report=term-missing
+```
 
 ---
 
 ## Continuous Integration
 
-GitHub Actions automatically performs the following on every push to `main`:
+GitHub Actions automatically runs on every push to `main`.
 
-- Installs dependencies  
-- Runs all tests  
-- Measures coverage  
-- Fails if coverage is less than 100%  
+The workflow:
 
-The workflow configuration file is located at:
+1. Installs project dependencies
+2. Runs pytest
+3. Measures coverage
+4. Fails if coverage drops below the threshold
+
+Workflow configuration:
+
+```
 .github/workflows/python-app.yml
+```
 
 ---
 
 ## Setup Instructions
 
 ### Clone the Repository
+
+```
 git clone <repository-url>
 cd History_Calculator/calculator-app
+```
+
+---
 
 ### Create Virtual Environment
 
 Mac/Linux:
+
+```
 python -m venv .venv
 source .venv/bin/activate
+```
 
 Windows:
+
+```
 python -m venv .venv
-..venv\Scripts\activate
+.venv\Scripts\activate
+```
+
+---
 
 ### Install Dependencies
+
+```
 pip install -r requirements.txt
+```
 
 ---
 
 ## Running the Calculator
 
-From inside the `calculator-app` directory:
-python -c "from app.calculator.cli import run_repl; run_repl()"
+Start the REPL:
+
+```
+python -m app.calculator_repl
+```
+
+---
 
 ### Example Usage
-add 2 3
+
+```
+> add 2 3
 Result: 5.0
-pow 2 3
+
+> pow 2 3
 Result: 8.0
-undo
-Undo successful.
-history
+
+> percent 25 200
+Result: 50.0
+
+> abs_diff 10 4
+Result: 6.0
+
+> history
 add 2 3 = 5.0
+pow 2 3 = 8.0
+
+> undo
+Undo successful.
+```
+
+---
+
+## Project Structure
+
+```
+calculator-app/
+│
+├── app/
+│   ├── calculator/
+│   │   ├── cli.py
+│   │   ├── facade.py
+│   │   └── ...
+│   ├── operation/
+│   │   ├── arithmetic.py
+│   │   └── base.py
+│   ├── observers.py
+│   ├── history.py
+│   ├── calculator_config.py
+│   └── exceptions.py
+│
+├── tests/
+│   ├── test_cli.py
+│   ├── test_operations.py
+│   └── ...
+│
+├── requirements.txt
+├── README.md
+└── .github/workflows/python-app.yml
+```
+
+---
+
+## Key Technologies
+
+- Python
+- pandas
+- pytest
+- pytest-cov
+- python-dotenv
+- colorama
+- GitHub Actions
