@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
 
 import pandas as pd
 
@@ -18,7 +18,7 @@ class HistorySnapshot:
 class CalculationHistory:
     """pandas-backed history with CSV persistence."""
 
-    REQUIRED_COLUMNS = ("operation", "a", "b", "result")
+    REQUIRED_COLUMNS = ("timestamp", "operation", "a", "b", "result")
 
     def __init__(self) -> None:
         self._df = self._empty_df()
@@ -27,11 +27,15 @@ class CalculationHistory:
         return pd.DataFrame(columns=list(self.REQUIRED_COLUMNS))
 
     def add(self, calc: Calculation) -> None:
+        # Compute result once (avoid double compute)
+        res = float(calc.result())
+
         row = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "operation": calc.operation.name,
             "a": float(calc.a),
             "b": float(calc.b),
-            "result": float(calc.result()),
+            "result": res,
         }
         self._df = pd.concat([self._df, pd.DataFrame([row])], ignore_index=True)
 
@@ -48,11 +52,12 @@ class CalculationHistory:
 
         lines: list[str] = []
         for _, row in self._df.iterrows():
-            op = row["operation"]
+            ts = str(row["timestamp"])
+            op = str(row["operation"])
             a = float(row["a"])
             b = float(row["b"])
             result = float(row["result"])
-            lines.append(f"{op} {a} {b} = {result}")
+            lines.append(f"{ts} | {op} {a} {b} = {result}")
         return lines
 
     def snapshot(self) -> HistorySnapshot:
@@ -66,15 +71,12 @@ class CalculationHistory:
     def save(self, path: str | Path) -> None:
         """Save current history to CSV."""
         p = Path(path)
-
-        # EAFP: attempt write and raise if it fails (permissions, invalid path, etc.)
         self._df.to_csv(p, index=False)
 
     def load(self, path: str | Path) -> None:
         """Load history from CSV, replacing current state."""
         p = Path(path)
 
-        # LBYL: check existence before reading
         if not p.exists():
             raise FileNotFoundError(f"History file not found: {p}")
 
@@ -91,5 +93,8 @@ class CalculationHistory:
         df["a"] = pd.to_numeric(df["a"])
         df["b"] = pd.to_numeric(df["b"])
         df["result"] = pd.to_numeric(df["result"])
+
+        # Timestamp stays as string;
+        df["timestamp"] = df["timestamp"].astype(str)
 
         self._df = df.reset_index(drop=True)
