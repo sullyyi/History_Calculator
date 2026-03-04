@@ -61,3 +61,36 @@ class Root(Operation):
             raise ValueError("Root of a negative number requires an odd integer exponent.")
 
         return a ** (1 / b)
+    
+class Modulus(Operation):
+    name = "modulus"
+
+    def compute(self, a: float, b: float) -> float:
+        if b == 0:
+            raise ZeroDivisionError("Cannot take modulus by zero.")
+        return a % b
+
+
+class IntDivide(Operation):
+    name = "int_divide"
+
+    def compute(self, a: float, b: float) -> float:
+        if b == 0:
+            raise ZeroDivisionError("Cannot integer-divide by zero.")
+        return a // b
+
+
+class Percent(Operation):
+    name = "percent"
+
+    def compute(self, a: float, b: float) -> float:
+        if b == 0:
+            raise ZeroDivisionError("Cannot compute percent with divisor zero.")
+        return (a / b) * 100
+
+
+class AbsDiff(Operation):
+    name = "abs_diff"
+
+    def compute(self, a: float, b: float) -> float:
+        return abs(a - b)

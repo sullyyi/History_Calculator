@@ -8,6 +8,20 @@ from app.calculator_config import load_config
 from app.exceptions import ConfigurationError
 from app.input_validators import parse_two_numbers
 
+ALIASES: dict[str, str] = {
+    # Required command names ->  internal operation names
+    "power": "pow",
+    "root": "root",
+    "modulus": "modulus",
+    "int_divide": "int_divide",
+    "percent": "percent",
+    "abs_diff": "abs_diff",
+
+    # Optional convenience aliases (safe)
+    "subtract": "sub",
+    "multiply": "mul",
+    "divide": "div",
+}
 
 def handle_line(line: str, calc: Calculator) -> str | None:
     line = line.strip()
@@ -56,6 +70,7 @@ def handle_line(line: str, calc: Calculator) -> str | None:
 
     op_name, a_str, b_str = parts
     try:
+        op_name = ALIASES.get(op_name.lower(), op_name.lower())
         a, b = parse_two_numbers(a_str, b_str)
         result = calc.execute(op_name, a, b)
         return f"Result: {result}"
