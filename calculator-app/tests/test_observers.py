@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from app.calculator.facade import Calculator
-from app.observers import AutoSaveObserver, LoggerObserver
+from app.observers import AutoSaveObserver, LoggingObserver
 
 
 def test_logger_observer_records_events(tmp_path: Path):
@@ -27,3 +27,13 @@ def test_autosave_observer_calls_save_func():
 
     obs.update("history_saved", {})
     assert calls == ["saved"]
+
+
+def test_logging_observer_writes_file(tmp_path: Path) -> None:
+    log_file = tmp_path / "calc.log"
+    obs = LoggingObserver(log_file=log_file, encoding="utf-8")
+
+    obs.update("calculation_added", {"operation": "add", "a": 2, "b": 3, "result": 5})
+
+    assert log_file.exists()
+    assert log_file.read_text(encoding="utf-8").strip() != ""

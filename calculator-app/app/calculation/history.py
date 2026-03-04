@@ -27,9 +27,7 @@ class CalculationHistory:
         return pd.DataFrame(columns=list(self.REQUIRED_COLUMNS))
 
     def add(self, calc: Calculation) -> None:
-        # Compute result once (avoid double compute)
         res = float(calc.result())
-
         row = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "operation": calc.operation.name,
@@ -40,7 +38,6 @@ class CalculationHistory:
         self._df = pd.concat([self._df, pd.DataFrame([row])], ignore_index=True)
 
     def all(self) -> pd.DataFrame:
-        """Return a copy of the current history DataFrame."""
         return self._df.copy()
 
     def clear(self) -> None:
@@ -52,31 +49,26 @@ class CalculationHistory:
 
         lines: list[str] = []
         for _, row in self._df.iterrows():
-            ts = str(row["timestamp"])
             op = str(row["operation"])
             a = float(row["a"])
             b = float(row["b"])
             result = float(row["result"])
-            lines.append(f"{ts} | {op} {a} {b} = {result}")
+            lines.append(f"{op} {a} {b} = {result}")
         return lines
 
     def snapshot(self) -> HistorySnapshot:
-        """Create a deep copy snapshot for undo/redo."""
         return HistorySnapshot(df=self._df.copy(deep=True))
 
     def restore(self, snap: HistorySnapshot) -> None:
-        """Restore history from a snapshot."""
         self._df = snap.df.copy(deep=True)
 
     def save(self, path: str | Path) -> None:
-        """Save current history to CSV."""
         p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
         self._df.to_csv(p, index=False)
 
     def load(self, path: str | Path) -> None:
-        """Load history from CSV, replacing current state."""
         p = Path(path)
-
         if not p.exists():
             raise FileNotFoundError(f"History file not found: {p}")
 
@@ -86,15 +78,10 @@ class CalculationHistory:
         if missing:
             raise ValueError(f"History CSV missing required columns: {missing}")
 
-        # Normalize column order (keeps output stable)
         df = df.loc[:, list(self.REQUIRED_COLUMNS)]
-
-        # Ensure numeric columns are numeric (raises if invalid)
+        df["timestamp"] = df["timestamp"].astype(str)
         df["a"] = pd.to_numeric(df["a"])
         df["b"] = pd.to_numeric(df["b"])
         df["result"] = pd.to_numeric(df["result"])
-
-        # Timestamp stays as string;
-        df["timestamp"] = df["timestamp"].astype(str)
 
         self._df = df.reset_index(drop=True)

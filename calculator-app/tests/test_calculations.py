@@ -7,7 +7,6 @@ from app.calculation.history import CalculationHistory
 from app.operation.arithmetic import Power, Root
 from app.calculator.facade import Calculator
 
-
 @pytest.mark.parametrize(
     "op_name,a,b,expected",
     [
@@ -188,3 +187,29 @@ def test_history_load_missing_file_raises(tmp_path):
 
     with pytest.raises(FileNotFoundError):
         history.load(missing)
+
+
+def test_history_saves_timestamp_column(tmp_path: Path) -> None:
+    hist = CalculationHistory()
+    factory = CalculationFactory()
+
+    calc = factory.create("add", 2, 3)
+    hist.add(calc)
+
+    p = tmp_path / "history.csv"
+    hist.save(p)
+
+    df = pd.read_csv(p)
+    assert "timestamp" in df.columns
+
+def test_history_output_hides_timestamp() -> None:
+    hist = CalculationHistory()
+    factory = CalculationFactory()
+
+    calc = factory.create("add", 2, 3)
+    hist.add(calc)
+
+    lines = hist.format_lines()
+    assert len(lines) == 1
+    assert "timestamp" not in lines[0].lower()
+    assert lines[0].startswith("add ")
