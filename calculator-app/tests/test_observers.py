@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from app.calculator.facade import Calculator
-from app.observers import AutoSaveObserver, LoggingObserver
+from app.observers import AutoSaveObserver, LoggingObserver, LoggerObserver
 
 
 def test_logger_observer_records_events(tmp_path: Path):

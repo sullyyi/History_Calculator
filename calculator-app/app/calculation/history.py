@@ -74,6 +74,10 @@ class CalculationHistory:
 
         df = pd.read_csv(p)
 
+        # Backward compatibility: older CSVs may not have timestamp
+        if "timestamp" not in df.columns:
+            df["timestamp"] = ""
+
         missing = [c for c in self.REQUIRED_COLUMNS if c not in df.columns]
         if missing:
             raise ValueError(f"History CSV missing required columns: {missing}")

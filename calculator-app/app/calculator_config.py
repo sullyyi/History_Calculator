@@ -9,13 +9,6 @@ from dotenv import load_dotenv
 from app.exceptions import ConfigurationError
 
 
-def _get_env(name: str, default: str) -> str:
-    v = os.getenv(name)
-    if v is not None:
-        return v
-    return default
-
-
 def _get_env_fallback(primary: str, fallback: str, default: str) -> str:
     v = os.getenv(primary)
     if v is not None:
@@ -75,7 +68,40 @@ class CalculatorConfig:
 def load_config() -> CalculatorConfig:
     load_dotenv()
 
-    # PDF names (primary) with CALC_* backward-compatible fallbacks
+    # Legacy full-path override (used by existing tests)
+    legacy_history_path = os.getenv("CALC_HISTORY_PATH")
+    if legacy_history_path is not None:
+        legacy_history_path = legacy_history_path.strip()
+        if not legacy_history_path:
+            raise ConfigurationError("CALC_HISTORY_PATH cannot be empty.")
+
+        p = Path(legacy_history_path).expanduser()
+        return CalculatorConfig(
+            history_dir=p.parent,
+            history_file=p.name,
+            log_dir=Path(_get_env_fallback("CALCULATOR_LOG_DIR", "CALC_LOG_DIR", ".")).expanduser(),
+            log_file=(
+                _get_env_fallback("CALCULATOR_LOG_FILE", "CALC_LOG_FILE", "calculator.log").strip()
+                or "calculator.log"
+            ),
+            max_history_size=_parse_int(
+                _get_env_fallback("CALCULATOR_MAX_HISTORY_SIZE", "CALC_MAX_HISTORY_SIZE", "1000"),
+                "CALCULATOR_MAX_HISTORY_SIZE",
+            ),
+            auto_save=_parse_bool(_get_env_fallback("CALCULATOR_AUTO_SAVE", "CALC_AUTO_SAVE", "false")),
+            auto_load=_parse_bool(_get_env_fallback("CALCULATOR_AUTO_LOAD", "CALC_AUTO_LOAD", "true")),
+            precision=_parse_int(_get_env_fallback("CALCULATOR_PRECISION", "CALC_PRECISION", "6"), "CALCULATOR_PRECISION"),
+            max_input_value=_parse_float(
+                _get_env_fallback("CALCULATOR_MAX_INPUT_VALUE", "CALC_MAX_INPUT_VALUE", "1000000000"),
+                "CALCULATOR_MAX_INPUT_VALUE",
+            ),
+            default_encoding=(
+                _get_env_fallback("CALCULATOR_DEFAULT_ENCODING", "CALC_DEFAULT_ENCODING", "utf-8").strip()
+                or "utf-8"
+            ),
+        )
+
+    # PDF-style names (primary) with CALC_* backward-compatible fallbacks
     history_dir_raw = _get_env_fallback("CALCULATOR_HISTORY_DIR", "CALC_HISTORY_DIR", ".")
     history_file_raw = _get_env_fallback("CALCULATOR_HISTORY_FILE", "CALC_HISTORY_FILE", "history.csv")
 
