@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
@@ -15,10 +15,10 @@ def _get_file_logger(log_file: Path, encoding: str = "utf-8") -> logging.Logger:
     logger = logging.getLogger("calculator")
     logger.setLevel(logging.INFO)
 
-    # Avoid duplicate handlers if create_default() is called multiple times in tests
     log_file = Path(log_file)
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
+    # Avoid duplicate handlers if create_default() is called multiple times in tests
     handler_key = str(log_file.resolve())
     existing = getattr(logger, "_calculator_handler_keys", set())
 
@@ -34,14 +34,14 @@ def _get_file_logger(log_file: Path, encoding: str = "utf-8") -> logging.Logger:
 
     return logger
 
-from dataclasses import dataclass, field
 
 @dataclass
-class LoggerObserver:
+class InMemoryLoggerObserver:
     lines: list[str] = field(default_factory=list)
 
     def update(self, event: str, payload: dict[str, Any]) -> None:
         self.lines.append(f"{event}: {payload}")
+
 
 @dataclass
 class LoggingObserver:
@@ -66,9 +66,9 @@ class AutoSaveObserver:
     save_func: Callable[[], None]
 
     def update(self, event: str, payload: dict[str, Any]) -> None:
-        # Spec: autosave on each new calculation (we also autosave on related state changes)
         if event in {"calculation_added", "history_cleared", "history_loaded", "undo", "redo"}:
             self.save_func()
 
-# Backwards-compatible alias for older tests/modules
-LoggerObserver = LoggingObserver
+
+# Backwards-compatible name expected by existing tests:
+LoggerObserver = InMemoryLoggerObserver

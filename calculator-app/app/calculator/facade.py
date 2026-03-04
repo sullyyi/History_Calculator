@@ -32,6 +32,8 @@ class Calculator:
         history_path: str | Path = "history.csv",
         auto_save: bool = False,
         auto_load: bool = False,
+        log_path: str | Path | None = None,
+        log_encoding: str = "utf-8",
     ) -> "Calculator":
         calc = cls(
             factory=CalculationFactory(),
@@ -39,11 +41,17 @@ class Calculator:
             history_path=Path(history_path),
         )
 
+        # Attach file logging observer (spec-required).
+        # If not provided, default to history file name with .log suffix.
+        if log_path is None:
+            log_path = calc.history_path.with_suffix(".log")
+
+        calc.attach(LoggingObserver(log_file=Path(log_path), encoding=log_encoding))
+
         if auto_save:
             calc.attach(AutoSaveObserver(save_func=calc.save))
 
         if auto_load:
-            # Auto-load is an app policy decision; it should not crash startup.
             calc.auto_load_if_exists()
 
         return calc
