@@ -152,7 +152,7 @@ def create_default(
     history_path: str | Path = "history.csv",
     auto_save: bool = False,
     auto_load: bool = False,
-    log_path: str | Path = "calculator.log",
+    log_path: str | Path | None = None,
     log_encoding: str = "utf-8",
 ) -> "Calculator":
     calc = cls(
@@ -161,7 +161,11 @@ def create_default(
         history_path=Path(history_path),
     )
 
-    # Always attach logging observer
+    # Attach file logger observer with specified path and encoding
+    # If no log_path provided, default next to history file.
+    if log_path is None:
+        log_path = calc.history_path.with_suffix(".log")
+
     calc.attach(LoggingObserver(log_file=Path(log_path), encoding=log_encoding))
 
     if auto_save:
