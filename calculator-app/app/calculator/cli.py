@@ -12,17 +12,18 @@ from colorama import Fore, Style, init
 init(autoreset=True)
 
 ALIASES: dict[str, str] = {
-    # Required command names ->  internal operation names
+    # Required command names -> internal operation names
     "power": "pow",
     "root": "root",
-    "modulus": "modulus",
-    "int_divide": "int_divide",
+    "modulus": "mod",
+    "int_divide": "int_div",
     "percent": "percent",
     "abs_diff": "abs_diff",
     "subtract": "sub",
     "multiply": "mul",
     "divide": "div",
 }
+
 
 def handle_line(line: str, calc: Calculator) -> str | None:
     line = line.strip()
@@ -32,8 +33,7 @@ def handle_line(line: str, calc: Calculator) -> str | None:
     cmd = line.lower()
 
     if cmd == "help":
-        lines = calc.history_lines()
-        return "\n".join(Fore.CYAN + line + Style.RESET_ALL for line in lines)
+        return calc.help_text()
 
     if cmd == "history":
         return "\n".join(calc.history_lines())
@@ -75,15 +75,37 @@ def handle_line(line: str, calc: Calculator) -> str | None:
         op_name = ALIASES.get(op_name.lower(), op_name.lower())
         a, b = parse_two_numbers(a_str, b_str)
         result = calc.execute(op_name, a, b)
-        return Fore.GREEN + f"Result: {result}" + Style.RESET_ALL
+        return f"Result: {result}"
+
     except ZeroDivisionError as exc:
-        return Fore.RED + f"Error: {exc}" + Style.RESET_ALL
+        return f"Error: {exc}"
 
     except ValidationError as exc:
-        return Fore.RED + f"Error: {exc}" + Style.RESET_ALL
+        return f"Error: {exc}"
 
     except ValueError as exc:
-        return Fore.RED + f"Error: {exc}" + Style.RESET_ALL
+        return f"Error: {exc}"
+
+
+def _colorize_response(text: str) -> str:
+    """
+    Apply color formatting only for interactive CLI output.
+    This keeps handle_line() test-safe.
+    """
+
+    if text.startswith("Result:"):
+        return Fore.GREEN + text + Style.RESET_ALL
+
+    if text.startswith("Error:"):
+        return Fore.RED + text + Style.RESET_ALL
+
+    if text.startswith("Commands:") or "Supported ops" in text:
+        return Fore.YELLOW + text + Style.RESET_ALL
+
+    if "\n" in text or text == "(no history)":
+        return Fore.CYAN + text + Style.RESET_ALL
+
+    return text
 
 
 def run_repl(
@@ -91,6 +113,7 @@ def run_repl(
     output_func: Callable[[str], None] = print,
     history_path: str | Path | None = None,
 ) -> None:
+
     # Load dotenv/env configuration (graceful failure)
     try:
         cfg = load_config()
@@ -102,16 +125,16 @@ def run_repl(
     path = Path(history_path) if history_path is not None else cfg.history_path
 
     calc = Calculator.create_default(
-    history_path=path,
-    auto_save=cfg.auto_save,
-    auto_load=False,
-    log_path=cfg.log_path,
-    log_encoding=cfg.default_encoding,
+        history_path=path,
+        auto_save=cfg.auto_save,
+        auto_load=False,
+        log_path=cfg.log_path,
+        log_encoding=cfg.default_encoding,
     )
 
     output_func("Calculator REPL. Type 'help' for commands.")
 
-    # Auto-load if enabled (Approach A keeps autosave optional)
+    # Auto-load if enabled
     if cfg.auto_load:
         try:
             if calc.auto_load_if_exists():
@@ -122,7 +145,9 @@ def run_repl(
     while True:
         line = input_func("> ")
         response = handle_line(line, calc)
+
         if response is None:
             output_func("Goodbye.")
             break
-        output_func(response)
+
+        output_func(_colorize_response(response))
