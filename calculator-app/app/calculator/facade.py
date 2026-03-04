@@ -6,7 +6,7 @@ from typing import Any
 
 from app.calculation.factory import CalculationFactory
 from app.calculation.history import CalculationHistory, HistorySnapshot
-from app.observers import Observer, AutoSaveObserver
+from app.observers import Observer, AutoSaveObserver, LoggingObserver
 from app.strategy import ExecutionStrategy, DirectExecutionStrategy
 
 
@@ -145,3 +145,29 @@ class Calculator:
         self.history.load(self.history_path)
         self._notify("history_loaded", {"path": str(self.history_path), "rows": len(self.history.all())})
         return True
+    
+@classmethod
+def create_default(
+    cls,
+    history_path: str | Path = "history.csv",
+    auto_save: bool = False,
+    auto_load: bool = False,
+    log_path: str | Path = "calculator.log",
+    log_encoding: str = "utf-8",
+) -> "Calculator":
+    calc = cls(
+        factory=CalculationFactory(),
+        history=CalculationHistory(),
+        history_path=Path(history_path),
+    )
+
+    # Always attach logging observer
+    calc.attach(LoggingObserver(log_file=Path(log_path), encoding=log_encoding))
+
+    if auto_save:
+        calc.attach(AutoSaveObserver(save_func=calc.save))
+
+    if auto_load:
+        calc.auto_load_if_exists()
+
+    return calc

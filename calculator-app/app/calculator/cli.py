@@ -16,8 +16,6 @@ ALIASES: dict[str, str] = {
     "int_divide": "int_divide",
     "percent": "percent",
     "abs_diff": "abs_diff",
-
-    # Optional convenience aliases (safe)
     "subtract": "sub",
     "multiply": "mul",
     "divide": "div",
@@ -98,9 +96,11 @@ def run_repl(
     path = Path(history_path) if history_path is not None else cfg.history_path
 
     calc = Calculator.create_default(
-        history_path=path,
-        auto_save=cfg.auto_save,
-        auto_load=False,  # we'll do controlled auto-load below
+    history_path=path,
+    auto_save=cfg.auto_save,
+    auto_load=False,
+    log_path=cfg.log_path,
+    log_encoding=cfg.default_encoding,
     )
 
     output_func("Calculator REPL. Type 'help' for commands.")
